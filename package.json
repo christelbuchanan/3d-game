@@ -1,0 +1,12 @@
+{
+  "name": "miniature",
+  "version": "0.1.1",
+  "private": true,
+  "scripts": {
+    "dev": "python3 -m http.server 3000",
+    "build": "node -e \"console.log('build skipped in offline environment')\"",
+    "start": "python3 -m http.server 3000",
+    "lint": "node -e \"console.log('lint skipped in offline environment')\"",
+    "typecheck": "tsc --noEmit"
+  }
+}
