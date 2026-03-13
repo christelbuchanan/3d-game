@@ -37,7 +37,7 @@ export function IsometricMap({ state, onHover, onPlace, onCamera, selectedCanPla
     <div className="relative h-full w-full overflow-hidden rounded-3xl bg-gradient-to-b from-[#f7f5eb] to-[#e8f0e7] shadow-soft">
       <svg
         className="h-full w-full"
-        onPointerMove={(e: any) => {
+        onPointerMove={(e: React.PointerEvent<SVGSVGElement>) => {
           if (dragging) {
             onCamera(dragStart.current.cx + (e.clientX - dragStart.current.x), dragStart.current.cy + (e.clientY - dragStart.current.y), state.camera.zoom);
             return;
@@ -47,7 +47,7 @@ export function IsometricMap({ state, onHover, onPlace, onCamera, selectedCanPla
           if (painting && state.selectedItemId === 'path') onPlace(tile.x, tile.y);
         }}
         onPointerLeave={() => onHover(null)}
-        onPointerDown={(e: any) => {
+        onPointerDown={(e: React.PointerEvent<SVGSVGElement>) => {
           if (e.button === 2) return;
           if (e.shiftKey || e.button === 1) {
             setDragging(true);
@@ -62,12 +62,12 @@ export function IsometricMap({ state, onHover, onPlace, onCamera, selectedCanPla
           setDragging(false);
           setPainting(false);
         }}
-        onWheel={(e: any) => {
+        onWheel={(e: React.WheelEvent<SVGSVGElement>) => {
           e.preventDefault();
           const zoom = Math.max(0.55, Math.min(1.8, state.camera.zoom + (e.deltaY > 0 ? -0.08 : 0.08)));
           onCamera(state.camera.x, state.camera.y, zoom);
         }}
-        onContextMenu={(e: any) => e.preventDefault()}
+        onContextMenu={(e: React.MouseEvent<SVGSVGElement>) => e.preventDefault()}
       >
         <g transform={`translate(${520 + state.camera.x}, ${160 + state.camera.y}) scale(${state.camera.zoom})`}>
           {mapTiles.map((tile) => {
