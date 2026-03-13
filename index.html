@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Miniature</title>
+  <style>
+    :root{--bg:#f6f1e8;--card:#ffffffd9;--ink:#27423a;--mint:#b8d7b6;--soft:#dce7dd;--rose:#f2d4c8}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,sans-serif;background:radial-gradient(circle at top,#fffdf8,#f5f0e5 70%);color:var(--ink)}
+    .app{display:grid;grid-template-rows:74px 1fr;height:100vh;padding:12px;gap:10px}
+    .top{background:var(--card);border-radius:18px;box-shadow:0 10px 30px rgba(39,66,58,.12);display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:10px}
+    .chip{background:#eaf5ea;border-radius:14px;padding:8px;text-align:center}.chip b{display:block;font-size:20px}
+    .main{display:grid;grid-template-columns:270px 1fr 300px;gap:10px;min-height:0}
+    .panel{background:var(--card);border-radius:18px;box-shadow:0 10px 30px rgba(39,66,58,.12);padding:12px;overflow:auto}
+    .btn{display:block;width:100%;text-align:left;border:1px solid #cde2cf;background:white;border-radius:12px;padding:8px;margin-bottom:6px;cursor:pointer}
+    .btn.active{border-color:#6aa579;background:#ecf8ef}
+    .map{position:relative;border-radius:18px;overflow:hidden;background:linear-gradient(#f7f5eb,#e8f0e7)}
+    canvas{width:100%;height:100%;display:block}
+    .feed{font-size:12px;background:#ecf8ef;padding:8px;border-radius:10px;margin-bottom:6px}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="chip">Funds<b id="funds">$1500</b></div><div class="chip">Guests<b id="guests">12</b></div>
+    <div class="chip">Happiness<b id="happiness">58%</b></div><div class="chip">Cleanliness<b id="cleanliness">74%</b></div>
+    <div class="chip">Rating<b id="rating">61%</b></div>
+  </div>
+  <div class="main">
+    <aside class="panel"><h3>Build Palette</h3><div id="tools"></div><p style="font-size:12px">Drag map to pan • Wheel to zoom • Right click cancel</p></aside>
+    <section class="map"><canvas id="c"></canvas></section>
+    <aside class="panel"><h3>Operations</h3><div id="ops"></div><h4>Guest Reactions</h4><div id="feed"></div></aside>
+  </div>
+</div>
+<script>
+const items=[['path',8,'Path'],['ferris',460,'Ferris Wheel'],['carousel',320,'Carousel'],['snack',120,'Snack Stall'],['tree',28,'Tree Grove'],['bench',16,'Bench'],['bulldozer',0,'Bulldozer']];
+const colors={path:'#d6c9ae',ferris:'#f0bec0',carousel:'#f4d79b',snack:'#ffddb1',tree:'#9ccf9f',bench:'#d0b291'};
+const tools=document.getElementById('tools');let selected='path';let funds=1500,guests=12,happiness=58,cleanliness=74,rating=61;
+items.forEach(([id,price,name])=>{const b=document.createElement('button');b.className='btn'+(id===selected?' active':'');b.textContent=`${name} — $${price}`;b.onclick=()=>{selected=id;[...tools.children].forEach(x=>x.classList.remove('active'));b.classList.add('active')};tools.appendChild(b)});
+const cvs=document.getElementById('c'),ctx=cvs.getContext('2d');const map={w:20,h:20,tw:52,th:26,ox:0,oy:-80,zoom:1,drag:false,sx:0,sy:0};
+const placed=[];const feed=document.getElementById('feed');const ops=document.getElementById('ops');
+function resize(){cvs.width=cvs.clientWidth*devicePixelRatio;cvs.height=cvs.clientHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}window.onresize=resize;resize();
+function t2s(x,y){return[(x-y)*map.tw/2,(x+y)*map.th/2]} function s2t(px,py){const tx=(py/(map.th/2)+px/(map.tw/2))/2;const ty=(py/(map.th/2)-px/(map.tw/2))/2;return[Math.floor(tx),Math.floor(ty)]}
+let hover=null;function render(){ctx.clearRect(0,0,cvs.clientWidth,cvs.clientHeight);ctx.save();ctx.translate(cvs.clientWidth/2+map.ox,120+map.oy);ctx.scale(map.zoom,map.zoom);
+for(let y=0;y<map.h;y++)for(let x=0;x<map.w;x++){const[sx,sy]=t2s(x,y);ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx+map.tw/2,sy+map.th/2);ctx.lineTo(sx,sy+map.th);ctx.lineTo(sx-map.tw/2,sy+map.th/2);ctx.closePath();
+const h=hover&&hover[0]===x&&hover[1]===y;ctx.fillStyle=h?'#bde5c5':((x+y)%2?'#dcead5':'#d2e1cc');ctx.strokeStyle='#b2c8ad';ctx.fill();ctx.stroke();}
+placed.sort((a,b)=>a.y-b.y).forEach(p=>{const[sx,sy]=t2s(p.x,p.y);ctx.fillStyle='rgba(0,0,0,.1)';ctx.fillRect(sx-15,sy+18,34,10);ctx.fillStyle=colors[p.id]||'#ccc';ctx.fillRect(sx-18,sy-14,36,24);ctx.fillStyle='#1f3f35';ctx.font='10px sans-serif';ctx.fillText(p.id,sx-13,sy)})
+ctx.restore();requestAnimationFrame(render)}render();
+function canPlace(x,y){return x>=0&&y>=0&&x<map.w&&y<map.h&&!placed.find(p=>p.x===x&&p.y===y)}
+function cost(id){return Object.fromEntries(items.map(([a,b])=>[a,b]))[id]||0}
+function clickAt(e){const r=cvs.getBoundingClientRect();const px=(e.clientX-r.left-cvs.clientWidth/2-map.ox)/map.zoom;const py=(e.clientY-r.top-120-map.oy)/map.zoom;const [x,y]=s2t(px,py);if(selected==='bulldozer'){const i=placed.findIndex(p=>p.x===x&&p.y===y);if(i>-1){feedMsg('Removed item');placed.splice(i,1)};return}
+if(!canPlace(x,y))return;const c=cost(selected);if(funds<c)return;funds-=c;placed.push({id:selected,x,y});feedMsg(`${selected} placed at ${x},${y}`)}
+function feedMsg(t){const d=document.createElement('div');d.className='feed';d.textContent=t;feed.prepend(d);while(feed.children.length>8)feed.lastChild.remove()}
+cvs.onmousemove=(e)=>{const r=cvs.getBoundingClientRect();const px=(e.clientX-r.left-cvs.clientWidth/2-map.ox)/map.zoom;const py=(e.clientY-r.top-120-map.oy)/map.zoom;hover=s2t(px,py);if(map.drag){map.ox=e.clientX-map.sx;map.oy=e.clientY-map.sy}}
+cvs.onmousedown=(e)=>{if(e.button===1||e.shiftKey){map.drag=true;map.sx=e.clientX-map.ox;map.sy=e.clientY-map.oy}else clickAt(e)};window.onmouseup=()=>map.drag=false;
+cvs.onwheel=(e)=>{e.preventDefault();map.zoom=Math.max(.55,Math.min(1.8,map.zoom+(e.deltaY>0?-0.08:0.08)))};cvs.oncontextmenu=(e)=>{e.preventDefault();selected='path';[...tools.children].forEach((x,i)=>x.classList.toggle('active',items[i][0]==='path'))}
+setInterval(()=>{const rides=placed.filter(p=>['ferris','carousel'].includes(p.id)).length;guests=Math.max(0,guests+(rides?2:-1));happiness=Math.min(100,55+rides*6+placed.filter(p=>p.id==='tree'||p.id==='bench').length);
+cleanliness=Math.max(20,78-placed.filter(p=>p.id==='snack').length*4);rating=Math.min(100,40+rides*10+Math.floor(happiness*.4));funds+=Math.max(0,Math.floor(guests/4)+rides*4);
+document.getElementById('funds').textContent='$'+funds;document.getElementById('guests').textContent=guests;document.getElementById('happiness').textContent=Math.round(happiness)+'%';document.getElementById('cleanliness').textContent=Math.round(cleanliness)+'%';document.getElementById('rating').textContent=Math.round(rating)+'%';
+ops.innerHTML=`<div class='feed'>Ride Queue: ${Math.floor(guests*.3)}</div><div class='feed'>Revenue/min: $${Math.floor(guests/2+rides*12)}</div><div class='feed'>Litter: ${Math.max(0,Math.floor(guests/8)-Math.floor(cleanliness/20))}</div><div class='feed'>Attractions: ${rides}</div>`
+if(Math.random()>.6)feedMsg(['Guests love the layout.','Snack Stall is getting attention.','Trees make the park feel cozy.','Guests want more attractions.'][Math.floor(Math.random()*4)])
+},1800)
+</script>
+</body>
+</html>
